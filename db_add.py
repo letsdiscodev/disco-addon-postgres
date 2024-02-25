@@ -9,22 +9,14 @@ import sseclient
 admin_conn_str = os.environ.get("ADMIN_CONN_STR")
 addon_project_name = os.environ.get("DISCO_PROJECT_NAME")
 api_key = os.environ.get("DISCO_API_KEY")
+disco_ip = os.environ.get("DISCO_IP")
 
 def main():
     project_name = "dummy" # get from command line args?
-    disco_ip = get_disco_ip()
     if admin_conn_str is None:
         admin_conn_str = create_postgres_project(disco_ip)
     add_db(disco_ip, project_name)
 
-
-def get_disco_ip():
-    response = requests.get(f"http://disco/meta",
-        auth=(api_key, ""),
-        headers={"Accept": "application/json"},
-    )
-    assert response.status_code == 200
-    return response.json()["meta"]["discoIp"]
 
 
 def create_postgres_project(disco_ip: str) -> str:
