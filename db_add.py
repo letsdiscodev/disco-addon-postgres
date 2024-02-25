@@ -12,11 +12,11 @@ api_key = os.environ.get("DISCO_API_KEY")
 disco_ip = os.environ.get("DISCO_IP")
 
 def main():
+    global admin_conn_str
     project_name = "dummy" # get from command line args?
     if admin_conn_str is None:
         admin_conn_str = create_postgres_project(disco_ip)
     add_db(disco_ip, project_name)
-
 
 
 def create_postgres_project(disco_ip: str) -> str:
