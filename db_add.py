@@ -28,7 +28,7 @@ def create_postgres_project(disco_ip: str) -> str:
         auth=(api_key, ""),
         headers={"Accept": "application/json"},
     )
-    assert response.status_code == 201
+    assert response.status_code == 201, f"{response.status_code} {response.text}"
     admin_user = "postgresadmin" # TODO generate username
     admin_password = "Password1" # TODO generate password
     url = f"http://disco/projects/postgres-db/env"
@@ -51,7 +51,7 @@ def create_postgres_project(disco_ip: str) -> str:
         auth=(api_key, ""),
         headers={"Accept": "application/json"},
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, f"{response.status_code} {response.text}"
     url = f"http://disco/projects/postgres-db/deployments"
     with open("postgres.json", "r", encoding="utf-8") as f:
         disco_file = f.read()
@@ -63,7 +63,7 @@ def create_postgres_project(disco_ip: str) -> str:
         auth=(api_key, ""),
         headers={"Accept": "application/json"},
     )
-    assert response.status_code == 201
+    assert response.status_code == 201, f"{response.status_code} {response.text}"
     resp_body = response.json()
     url = f"http://disco/projects/postgres-db/deployments/{resp_body['deployment']['number']}/output"
     response = requests.get(url,
@@ -88,7 +88,7 @@ def create_postgres_project(disco_ip: str) -> str:
         auth=(api_key, ""),
         headers={"Accept": "application/json"},
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, f"{response.status_code} {response.text}"
     return admin_conn_str
 
 
@@ -119,7 +119,7 @@ def add_db(disco_ip: str, project_name: str) -> None:
         auth=(api_key, ""),
         headers={"Accept": "application/json"},
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, f"{response.status_code} {response.text}"
     # TODO print deployment output?
 
 
