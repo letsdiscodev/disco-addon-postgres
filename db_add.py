@@ -98,6 +98,7 @@ def add_db(disco_ip: str, project_name: str) -> None:
     new_password = "pwpwpwpw" # TODO generate
 
     with psycopg.connect(admin_conn_str) as conn:
+        conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute(f"CREATE DATABASE {new_db_name};")
             cur.execute(f"CREATE USER {new_user} WITH ENCRYPTED PASSWORD '{new_password}';")
