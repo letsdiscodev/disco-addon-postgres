@@ -103,10 +103,10 @@ def add_db(disco_ip: str, project_name: str) -> None:
             cur.execute(f"CREATE DATABASE {new_db_name};")
             cur.execute(f"CREATE USER {new_user} WITH ENCRYPTED PASSWORD '{new_password}';")
             cur.execute(f"GRANT ALL PRIVILEGES ON DATABASE {new_db_name} TO {new_user};")
-
+            cur.execute(f"ALTER DATABASE {new_db_name} OWNER TO {new_user};")
 
     # TODO save new DB/user info
-    conn_str = f"postgresql://{new_db_name}:{new_password}@{disco_ip}/{new_db_name}"
+    conn_str = f"postgresql://{new_user}:{new_password}@{disco_ip}/{new_db_name}"
     url = f"http://disco/projects/{project_name}/env"
     req_body = dict(
         envVariables=[
