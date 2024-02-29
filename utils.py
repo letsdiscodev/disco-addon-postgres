@@ -3,6 +3,7 @@ import secrets
 import sys
 import json
 
+from keyvaluestore import KeyValueStore
 import psycopg
 import requests
 import sseclient
@@ -14,9 +15,11 @@ from storeutils import (
 )
 
 
-def add_postgres_project(disco_ip: str, api_key: str) -> tuple[str, str]:
+def add_postgres_project(
+    disco_ip: str, store: KeyValueStore, api_key: str
+) -> tuple[str, str]:
     postgres_project_name = create_postgres_project(api_key)
-    remember_postgres_project_name(postgres_project_name)
+    remember_postgres_project_name(store, postgres_project_name)
     admin_user = generate_str()
     admin_password = generate_str()
     init_postgres_env_variables(
@@ -29,6 +32,7 @@ def add_postgres_project(disco_ip: str, api_key: str) -> tuple[str, str]:
         postgres_project_name=postgres_project_name, api_key=api_key
     )
     remember_admin_credentials(
+        store=store,
         postgres_project_name=postgres_project_name,
         user=admin_user,
         password=admin_password,
@@ -39,9 +43,12 @@ def add_postgres_project(disco_ip: str, api_key: str) -> tuple[str, str]:
     )
 
 
-def add_db(postgres_project_name: str, admin_conn_str: str) -> tuple[str, str]:
+def add_db(
+    postgres_project_name: str, admin_conn_str: str, store: KeyValueStore
+) -> tuple[str, str]:
     db_name, user, password = sql_add_db(admin_conn_str)
     remember_db(
+        store=store,
         postgres_project_name=postgres_project_name,
         db_name=db_name,
         user=user,
@@ -77,6 +84,7 @@ def attach_db(
     user: str,
     api_key: str,
     disco_ip: str,
+    store: KeyValueStore,
 ) -> None:
     url = f"http://disco/projects/{project_name}/env"
     req_body = dict(
@@ -84,6 +92,7 @@ def attach_db(
             {
                 "name": "DATABASE_URL",
                 "value": get_conn_str(
+                    store=store,
                     postgres_project_name=postgres_project_name,
                     db_name=db_name,
                     user=user,
@@ -103,7 +112,10 @@ def attach_db(
     resp_body = response.json()
     if resp_body["deployment"] is None:
         return
-    url = f"http://disco/projects/{postgres_project_name}/deployments/{resp_body['deployment']['number']}/output"
+    url = (
+        f"http://disco/projects/{postgres_project_name}"
+        f"/deployments/{resp_body['deployment']['number']}/output"
+    )
     response = requests.get(
         url,
         auth=(api_key, ""),

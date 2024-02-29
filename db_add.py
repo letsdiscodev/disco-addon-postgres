@@ -29,7 +29,11 @@ def main():
         admin_conn_str = get_admin_conn_str(
             store=store, postgres_project_name=postgres_project_name, disco_ip=disco_ip
         )
-    db_name, user = add_db(postgres_project_name, admin_conn_str)
+    db_name, user = add_db(
+        postgres_project_name=postgres_project_name,
+        admin_conn_str=admin_conn_str,
+        store=store,
+    )
     attach_db(
         postgres_project_name=postgres_project_name,
         project_name=project_name,
@@ -37,6 +41,7 @@ def main():
         user=user,
         api_key=api_key,
         disco_ip=disco_ip,
+        store=store,
     )
 
 
