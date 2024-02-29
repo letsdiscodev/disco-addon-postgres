@@ -3,12 +3,12 @@ import json
 from keyvaluestore import KeyValueStore
 
 
-POSTGRES_PROJECTS_NAME_KEY = "POSTGRES_PROJECTS_NAME"
+POSTGRES_PROJECT_NAMES_KEY = "POSTGRES_PROJECT_NAMES"
 POSTGRES_META_KEY = "POSTGRES_META_{project_name}"
 
 
 def get_postgres_project_names(store: KeyValueStore) -> list[str]:
-    value = store.get(key=POSTGRES_PROJECTS_NAME_KEY)
+    value = store.get(key=POSTGRES_PROJECT_NAMES_KEY)
     if value is None:
         return []
     return json.loads(value)
@@ -24,7 +24,7 @@ def remember_postgres_project_name(store: KeyValueStore, name: str) -> None:
         new_value = json.dumps(names)
         return new_value
 
-    store.update(key=POSTGRES_PROJECTS_NAME_KEY, update_func=update_func)
+    store.update(key=POSTGRES_PROJECT_NAMES_KEY, update_func=update_func)
 
 
 def remember_admin_credentials(

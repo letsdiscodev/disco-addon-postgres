@@ -20,8 +20,14 @@ def add_postgres_project(
 ) -> tuple[str, str]:
     postgres_project_name = create_postgres_project(api_key)
     remember_postgres_project_name(store, postgres_project_name)
-    admin_user = generate_str()
-    admin_password = generate_str()
+    admin_user = generate_str(include_uppercase=False)
+    admin_password = generate_str(include_uppercase=True)
+    remember_admin_credentials(
+        store=store,
+        postgres_project_name=postgres_project_name,
+        user=admin_user,
+        password=admin_password,
+    )
     init_postgres_env_variables(
         api_key=api_key,
         postgres_project_name=postgres_project_name,
@@ -30,12 +36,6 @@ def add_postgres_project(
     )
     deploy_postgres_project(
         postgres_project_name=postgres_project_name, api_key=api_key
-    )
-    remember_admin_credentials(
-        store=store,
-        postgres_project_name=postgres_project_name,
-        user=admin_user,
-        password=admin_password,
     )
     return (
         f"postgresql://{admin_user}:{admin_password}@{disco_ip}",
@@ -58,9 +58,9 @@ def add_db(
 
 
 def sql_add_db(admin_conn_str: str) -> tuple[str, str, str]:
-    new_db_name = generate_str()
-    new_user = generate_str()
-    new_password = generate_str()
+    new_db_name = generate_str(include_uppercase=False)
+    new_user = generate_str(include_uppercase=False)
+    new_password = generate_str(include_uppercase=True)
 
     with psycopg.connect(admin_conn_str) as conn:
         conn.autocommit = True
@@ -189,7 +189,10 @@ def deploy_postgres_project(postgres_project_name: str, api_key: str) -> None:
     )
     assert_status_code(response, 201)
     resp_body = response.json()
-    url = f"http://disco/projects/{postgres_project_name}/deployments/{resp_body['deployment']['number']}/output"
+    url = (
+        f"http://disco/projects/{postgres_project_name}/deployments"
+        f"/{resp_body['deployment']['number']}/output"
+    )
     response = requests.get(
         url,
         auth=(api_key, ""),
@@ -215,7 +218,7 @@ def get_params_from_cli_args(api_key: str) -> str:
 
 def project_exists(api_key: str, project: str):
     response = requests.get(
-        f"http://disco/projects",
+        "http://disco/projects",
         auth=(api_key, ""),
         headers={"Accept": "application/json"},
         timeout=10,
@@ -232,7 +235,7 @@ def assert_status_code(response, status_code):
         )
 
 
-def generate_str() -> str:
+def generate_str(include_uppercase: bool) -> str:
     alphabet = string.ascii_letters + string.digits
     first_char = secrets.choice(string.ascii_letters)
     rest = "".join(secrets.choice(alphabet) for _ in range(16))
