@@ -236,7 +236,11 @@ def assert_status_code(response, status_code):
 
 
 def generate_str(include_uppercase: bool) -> str:
-    alphabet = string.ascii_letters + string.digits
-    first_char = secrets.choice(string.ascii_letters)
-    rest = "".join(secrets.choice(alphabet) for _ in range(16))
+    if include_uppercase:
+        ascii_letters = string.ascii_letters
+    else:
+        ascii_letters = string.ascii_lowercase
+    alphabet = ascii_letters + string.digits
+    first_char = secrets.choice(ascii_letters)
+    rest = "".join(secrets.choice(alphabet) for _ in range(15))
     return first_char + rest
