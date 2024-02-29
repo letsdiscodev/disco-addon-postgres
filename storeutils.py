@@ -32,7 +32,7 @@ def remember_admin_credentials(
 ) -> None:
     def update_func(value: str) -> str:
         if value is None:
-            meta = {"databases": []}
+            meta = {"databases": {}}
         else:
             meta = json.loads(value)
         meta["adminUser"] = user
