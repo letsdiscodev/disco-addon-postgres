@@ -22,7 +22,9 @@ def main():
     postgres_projects = get_postgres_project_names(store)
     if len(postgres_projects) == 0:
         admin_conn_str, postgres_project_name = add_postgres_project(
-            disco_ip=disco_ip, api_key=api_key
+            disco_ip=disco_ip,
+            api_key=api_key,
+            store=store,
         )
     else:
         postgres_project_name = postgres_projects[0]
