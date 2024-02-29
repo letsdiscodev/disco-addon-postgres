@@ -117,7 +117,7 @@ def attach_db(
 
 def create_postgres_project(api_key: str) -> str:
     req_body = {
-        "name": "postgres-db",
+        "name": "postgres",
         "generateSuffix": True,
     }
     response = requests.post(
