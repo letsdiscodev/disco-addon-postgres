@@ -176,13 +176,13 @@ def init_postgres_env_variables(
 def deploy_postgres_project(postgres_project_name: str, api_key: str) -> None:
     url = f"http://disco/projects/{postgres_project_name}/deployments"
     with open("postgres.json", "r", encoding="utf-8") as f:
-        disco_file = f.read()
-    disco_file_data = json.loads(disco_file)
-    disco_file_data["services"]["postgres"]["volumes"][0][
-        "name"
-    ] = f"{postgres_project_name}-data"
+        disco_file_str = f.read()
+    disco_file = json.loads(disco_file_str)
+    disco_file["services"]["postgres"]["volumes"][0]["name"] = (
+        f"{postgres_project_name}-data"
+    )
     req_body = {
-        "discoFile": json.dumps(disco_file_data),
+        "discoFile": disco_file,
     }
     response = requests.post(
         url,
