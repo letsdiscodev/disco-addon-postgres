@@ -2,9 +2,7 @@
     "version": "1.0",
     "services": {
         "postgres": {
-            "image": {
-                "pull": "postgres:16.1"
-            },
+            "image": "postgres:16.1",
             "publishedPorts": [
                 {
                     "publishedAs": 5432,
