@@ -216,7 +216,7 @@ def get_params_from_cli_args(api_key: str) -> str:
     if project is None:
         raise Exception("Please pass project name with --project")
     if not project_exists(api_key, project):
-        raise Exception("Project {project} doesn't exist")
+        raise Exception(f"Project {project} doesn't exist")
     return project
 
 
