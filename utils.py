@@ -207,8 +207,11 @@ def deploy_postgres_project(postgres_project_name: str, api_key: str) -> None:
         stream=True,
     )
     for event in sseclient.SSEClient(response).events():
-        output = json.loads(event.data)
-        print(output["text"], end="", flush=True)
+        if event.event == "output":
+            output = json.loads(event.data)
+            print(output["text"], end="", flush=True)
+        elif event.event == "end":
+            break
 
 
 def get_params_from_cli_args(api_key: str) -> str:
@@ -219,7 +222,7 @@ def get_params_from_cli_args(api_key: str) -> str:
     if project is None:
         raise Exception("Please pass project name with --project")
     if not project_exists(api_key, project):
-        raise Exception(f"Project {project} doesn't exist")
+        raise Exception("Project {project} doesn't exist")
     return project
 
 
