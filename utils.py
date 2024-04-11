@@ -123,8 +123,11 @@ def attach_db(
         stream=True,
     )
     for event in sseclient.SSEClient(response).events():
-        output = json.loads(event.data)
-        print(output["text"], end="", flush=True)
+        if event.event == "output":
+            output = json.loads(event.data)
+            print(output["text"], end="", flush=True)
+        elif event.event == "end":
+            break
 
 
 def create_postgres_project(api_key: str) -> str:

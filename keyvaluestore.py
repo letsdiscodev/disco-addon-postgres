@@ -5,7 +5,7 @@ import requests
 
 class KeyValueStore:
     def __init__(self, api_key: str, project_name: str):
-        self._keyvalues = {}
+        self._keyvalues: dict[str, str | None] = {}
         self._api_key = api_key
         self._project_name = project_name
 
@@ -25,9 +25,9 @@ class KeyValueStore:
         self._keyvalues[key] = value
         return value
 
-    def set(self, key: str, value: str, raise_if_changed: bool = True) -> None:
+    def set(self, key: str, value: str | None, raise_if_changed: bool = True) -> None:
         url = f"http://disco/projects/{self._project_name}/keyvalues/{key}"
-        req_body = {"value": value}
+        req_body: dict[str, str | None] = {"value": value}
         if raise_if_changed and key in self._keyvalues:
             req_body["previousValue"] = self._keyvalues[key]
         response = requests.put(
@@ -41,12 +41,12 @@ class KeyValueStore:
             raise Exception(f"Disco returned {response.status_code}: {response.text}")
 
     def update(
-        self, key: str, update_func: Callable[[str], str], attempts: int = 5
+        self, key: str, update_func: Callable[[str | None], str], attempts: int = 5
     ) -> None:
         for i in range(attempts):
             try:
                 value = self.get(key)
-                new_value = update_func(value)
+                new_value: str | None = update_func(value)
                 self.set(key, new_value)
                 break
             except Exception:

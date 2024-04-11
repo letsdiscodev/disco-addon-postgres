@@ -15,7 +15,7 @@ def get_postgres_project_names(store: KeyValueStore) -> list[str]:
 
 
 def remember_postgres_project_name(store: KeyValueStore, name: str) -> None:
-    def update_func(value: str) -> str:
+    def update_func(value: str | None) -> str:
         if value is None:
             names = []
         else:
@@ -30,7 +30,7 @@ def remember_postgres_project_name(store: KeyValueStore, name: str) -> None:
 def remember_admin_credentials(
     store: KeyValueStore, postgres_project_name: str, user: str, password: str
 ) -> None:
-    def update_func(value: str) -> str:
+    def update_func(value: str | None) -> str:
         if value is None:
             meta = {"databases": {}}
         else:
@@ -51,7 +51,7 @@ def remember_db(
     user: str,
     password: str,
 ) -> None:
-    def update_func(value: str) -> str:
+    def update_func(value: str | None) -> str:
         if value is None:
             meta = {"databases": {}}
         else:
