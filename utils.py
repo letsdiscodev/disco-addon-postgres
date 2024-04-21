@@ -16,7 +16,7 @@ from storeutils import (
 
 
 def add_postgres_project(
-    disco_ip: str, store: KeyValueStore, api_key: str
+    disco_host: str, store: KeyValueStore, api_key: str
 ) -> tuple[str, str]:
     postgres_project_name = create_postgres_project(api_key)
     remember_postgres_project_name(store, postgres_project_name)
@@ -38,7 +38,7 @@ def add_postgres_project(
         postgres_project_name=postgres_project_name, api_key=api_key
     )
     return (
-        f"postgresql://{admin_user}:{admin_password}@{disco_ip}",
+        f"postgresql://{admin_user}:{admin_password}@{disco_host}",
         postgres_project_name,
     )
 
@@ -83,7 +83,7 @@ def attach_db(
     db_name: str,
     user: str,
     api_key: str,
-    disco_ip: str,
+    disco_host: str,
     store: KeyValueStore,
 ) -> None:
     url = f"http://disco/projects/{project_name}/env"
@@ -96,7 +96,7 @@ def attach_db(
                     postgres_project_name=postgres_project_name,
                     db_name=db_name,
                     user=user,
-                    disco_ip=disco_ip,
+                    disco_host=disco_host,
                 ),
             }
         ],

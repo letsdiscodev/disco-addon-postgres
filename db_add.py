@@ -16,20 +16,20 @@ from storeutils import (
 def main():
     addon_project_name = os.environ.get("DISCO_PROJECT_NAME")
     api_key = os.environ.get("DISCO_API_KEY")
-    disco_ip = os.environ.get("DISCO_IP")
+    disco_host = os.environ.get("DISCO_HOST")
     project_name = get_params_from_cli_args(api_key)
     store = KeyValueStore(api_key=api_key, project_name=addon_project_name)
     postgres_projects = get_postgres_project_names(store)
     if len(postgres_projects) == 0:
         admin_conn_str, postgres_project_name = add_postgres_project(
-            disco_ip=disco_ip,
+            disco_host=disco_host,
             api_key=api_key,
             store=store,
         )
     else:
         postgres_project_name = postgres_projects[0]
         admin_conn_str = get_admin_conn_str(
-            store=store, postgres_project_name=postgres_project_name, disco_ip=disco_ip
+            store=store, postgres_project_name=postgres_project_name, disco_host=disco_host
         )
     db_name, user = add_db(
         postgres_project_name=postgres_project_name,
@@ -42,7 +42,7 @@ def main():
         db_name=db_name,
         user=user,
         api_key=api_key,
-        disco_ip=disco_ip,
+        disco_host=disco_host,
         store=store,
     )
 

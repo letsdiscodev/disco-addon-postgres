@@ -70,7 +70,7 @@ def remember_db(
 
 
 def get_admin_conn_str(
-    store: KeyValueStore, postgres_project_name: str, disco_ip: str
+    store: KeyValueStore, postgres_project_name: str, disco_host: str
 ) -> str | None:
     key = POSTGRES_META_KEY.format(project_name=postgres_project_name)
     value = store.get(key)
@@ -81,7 +81,7 @@ def get_admin_conn_str(
         return None
     if "adminPassword" not in meta:
         return None
-    return f"postgresql://{meta['adminUser']}:{meta['adminPassword']}@{disco_ip}"
+    return f"postgresql://{meta['adminUser']}:{meta['adminPassword']}@{disco_host}"
 
 
 def get_conn_str(
@@ -89,7 +89,7 @@ def get_conn_str(
     postgres_project_name: str,
     db_name: str,
     user: str,
-    disco_ip: str,
+    disco_host: str,
 ) -> str | None:
     key = POSTGRES_META_KEY.format(project_name=postgres_project_name)
     value = store.get(key)
@@ -101,4 +101,4 @@ def get_conn_str(
     if user not in meta["databases"][db_name]["users"]:
         return None
     password = meta["databases"][db_name]["users"][user]["password"]
-    return f"postgresql://{user}:{password}@{disco_ip}/{db_name}"
+    return f"postgresql://{user}:{password}@{disco_host}/{db_name}"
