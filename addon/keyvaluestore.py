@@ -10,7 +10,7 @@ class KeyValueStore:
         self._project_name = project_name
 
     def get(self, key: str) -> str | None:
-        url = f"http://disco/projects/{self._project_name}/keyvalues/{key}"
+        url = f"http://disco/api/projects/{self._project_name}/keyvalues/{key}"
         response = requests.get(
             url,
             auth=(self._api_key, ""),
@@ -26,7 +26,7 @@ class KeyValueStore:
         return value
 
     def set(self, key: str, value: str | None, raise_if_changed: bool = True) -> None:
-        url = f"http://disco/projects/{self._project_name}/keyvalues/{key}"
+        url = f"http://disco/api/projects/{self._project_name}/keyvalues/{key}"
         req_body: dict[str, str | None] = {"value": value}
         if raise_if_changed and key in self._keyvalues:
             req_body["previousValue"] = self._keyvalues[key]
@@ -34,6 +34,17 @@ class KeyValueStore:
             url,
             auth=(self._api_key, ""),
             json=req_body,
+            headers={"Accept": "application/json"},
+            timeout=10,
+        )
+        if response.status_code != 200:
+            raise Exception(f"Disco returned {response.status_code}: {response.text}")
+
+    def unset(self, key: str) -> None:
+        url = f"http://disco/api/projects/{self._project_name}/keyvalues/{key}"
+        response = requests.delete(
+            url,
+            auth=(self._api_key, ""),
             headers={"Accept": "application/json"},
             timeout=10,
         )

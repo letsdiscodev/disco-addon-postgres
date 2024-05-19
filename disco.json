@@ -1,9 +1,9 @@
 {
     "version": "1.0",
     "services": {
-        "db:add": {
-            "type": "command",
-            "command": "python db_add.py"
+        "endpoints": {
+            "type": "cgi",
+            "command": "python addoncgi.py"
         }
     }
 }
