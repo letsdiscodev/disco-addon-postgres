@@ -3,7 +3,19 @@
     "services": {
         "endpoints": {
             "type": "cgi",
-            "command": "python addoncgi.py"
+            "command": "addon_cgi",
+            "volumes": [{
+                "name": "addon-data",
+                "destinationPath": "/addon/data"
+            }]
+        },
+        "hook:deploy:start:before": {
+            "type": "command",
+            "command": "addon_deploy",
+            "volumes": [{
+                "name": "addon-data",
+                "destinationPath": "/addon/data"
+            }]
         }
     }
 }

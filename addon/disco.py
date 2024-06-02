@@ -1,10 +1,11 @@
-import requests
-from addon import misc
-from addon.context import api_key
 import copy
+import logging
 from typing import Any
 
-import logging
+import requests
+
+from addon import misc
+from addon.context import api_key
 
 log = logging.getLogger(__name__)
 

@@ -1,5 +1,6 @@
-import psycopg
 import logging
+
+import psycopg
 
 log = logging.getLogger(__name__)
 

@@ -1,5 +1,5 @@
-import string
 import secrets
+import string
 
 
 def assert_status_code(response, status_code):
@@ -19,8 +19,12 @@ def conn_string(
     return f"{instance_url}/{db_name}"
 
 
-def project_name_for_instance(instance_name: str) -> str:
+def instance_project_name(instance_name: str) -> str:
     return f"postgres-instance-{instance_name}"
+
+
+def instance_name_from_project_name(project_name: str) -> str:
+    return project_name.replace("postgres-instance-", "")
 
 
 def generate_str(include_uppercase: bool) -> str:

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -10,8 +8,9 @@ log.info("Handling CGI request from Postgres addon")
 
 
 def main():
-    from a2wsgi import ASGIMiddleware
     from wsgiref.handlers import CGIHandler
+
+    from a2wsgi import ASGIMiddleware
 
     from addon.api import app
     from addon.exchandler import stderr_traceback_on_exception

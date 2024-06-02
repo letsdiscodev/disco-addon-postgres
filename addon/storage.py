@@ -1,177 +1,137 @@
-from datetime import datetime, timezone
-import json
-from typing import Any
-from addon.context import store
-from addon import misc
 import logging
+from typing import Sequence
+
+from sqlalchemy import select
+from sqlalchemy.orm.session import Session as DBSession
+
+from addon import misc
+from addon.models import Attachment, Database, Instance, User
+from addon.models.db import Session
 
 log = logging.getLogger(__name__)
 
-POSTGRES_PROJECT_NAMES_KEY = "POSTGRES_PROJECT_NAMES"
-POSTGRES_META_KEY = "POSTGRES_META_{project_name}"
 
-
-def get_postgres_project_names() -> list[str]:
-    value = store.get(key=POSTGRES_PROJECT_NAMES_KEY)
-    if value is None:
-        return []
-    return json.loads(value)
-
-
-def add_postgres_instance(project_name: str, version: str) -> None:
-    log.info("Saving info about new instance %s", project_name)
-
-    def update_func(value: str | None) -> str:
-        if value is None:
-            names = []
-        else:
-            names = json.loads(value)
-        names.append(project_name)
-        new_value = json.dumps(names)
-        return new_value
-
-    store.update(key=POSTGRES_PROJECT_NAMES_KEY, update_func=update_func)
-    meta: dict[str, Any] = {
-        "created": datetime.now(timezone.utc).isoformat(),
-        "version": version,
-        "admin": None,
-        "databases": {},
-    }
-    store.set(
-        key=POSTGRES_META_KEY.format(project_name=project_name), value=json.dumps(meta)
-    )
-
-
-def remove_postgres_instance(project_name: str) -> None:
-    log.info("Removing info about instance %s", project_name)
-
-    def update_func(value: str | None) -> str:
-        if value is None:
-            names = []
-        else:
-            names = json.loads(value)
-        names.remove(project_name)
-        new_value = json.dumps(names)
-        return new_value
-
-    store.update(key=POSTGRES_PROJECT_NAMES_KEY, update_func=update_func)
-    store.unset(key=POSTGRES_META_KEY.format(project_name=project_name))
-
-
-def get_instance(
-    postgres_project_name: str,
-) -> dict[str, Any] | None:
-    key = POSTGRES_META_KEY.format(project_name=postgres_project_name)
-    value = store.get(key)
-    if value is None:
-        return None
-    return json.loads(value)
-
-
-def save_admin_credentials(
-    postgres_project_name: str, user: str, password: str
+def add_postgres_instance(
+    instance_name: str, version: str, admin_user: str, admin_password: str
 ) -> None:
-    log.info("Saving admin credentials for %s", postgres_project_name)
+    log.info("Saving info about new instance %s", instance_name)
+    with Session.begin() as dbsession:
+        instance = Instance(
+            name=instance_name,
+            version=version,
+            admin_user=admin_user,
+            admin_password=admin_password,
+        )
+        dbsession.add(instance)
 
-    def update_func(value: str | None) -> str:
-        assert value is not None
-        meta = json.loads(value)
-        meta["admin"] = {"user": user, "password": password}
-        new_value = json.dumps(meta)
-        return new_value
 
-    key = POSTGRES_META_KEY.format(project_name=postgres_project_name)
-    store.update(key=key, update_func=update_func)
+def remove_postgres_instance(instance_name: str) -> None:
+    log.info("Removing info about instance %s", instance_name)
+    with Session.begin() as dbsession:
+        instance = get_instance_by_name(dbsession, instance_name)
+        if instance is None:
+            log.info("Instance not found, doing nothing")
+            return
+        for database in instance.databases:
+            dbsession.delete(database)
+        dbsession.delete(instance)
 
 
 def add_db(
-    postgres_project_name: str,
+    instance_name: str,
     db_name: str,
 ) -> None:
-    log.info("Storing info about database %s (%s)", db_name, postgres_project_name)
-
-    def update_func(value: str | None) -> str:
-        assert value is not None
-        meta = json.loads(value)
-        meta["databases"][db_name] = {
-            "created": datetime.now(timezone.utc).isoformat(),
-            "users": {},
-        }
-        new_value = json.dumps(meta)
-        return new_value
-
-    key = POSTGRES_META_KEY.format(project_name=postgres_project_name)
-    store.update(key=key, update_func=update_func)
+    log.info("Storing info about database %s (%s)", db_name, instance_name)
+    with Session.begin() as dbsession:
+        instance = get_instance_by_name(
+            dbsession=dbsession, instance_name=instance_name
+        )
+        assert instance is not None
+        database = Database(
+            name=db_name,
+            instance=instance,
+        )
+        dbsession.add(database)
 
 
 def remove_db(
-    postgres_project_name: str,
+    instance_name: str,
     db_name: str,
 ) -> None:
-    log.info("Removing info about database %s (%s)", db_name, postgres_project_name)
-
-    def update_func(value: str | None) -> str:
-        assert value is not None
-        meta = json.loads(value)
-        if db_name in meta["databases"]:
-            del meta["databases"][db_name]
-        new_value = json.dumps(meta)
-        return new_value
-
-    key = POSTGRES_META_KEY.format(project_name=postgres_project_name)
-    store.update(key=key, update_func=update_func)
+    log.info("Removing info about database %s (%s)", db_name, instance_name)
+    with Session.begin() as dbsession:
+        database = get_database(
+            dbsession=dbsession, instance_name=instance_name, db_name=db_name
+        )
+        if database is None:
+            log.info("Database not found, doing nothing")
+            return
+        assert len(database.users) == 0
+        dbsession.delete(database)
 
 
-def add_user(
-    postgres_project_name: str, db_name: str, user: str, password: str
-) -> None:
+def add_user(instance_name: str, db_name: str, user_name: str, password: str) -> None:
     log.info(
         "Storing info about user %s for database %s (%s)",
-        user,
+        user_name,
         db_name,
-        postgres_project_name,
+        instance_name,
     )
 
-    def update_func(value: str | None) -> str:
-        assert value is not None
-        meta = json.loads(value)
-        meta["databases"][db_name]["users"][user] = {
-            "created": datetime.now(timezone.utc).isoformat(),
-            "user": user,
-            "password": password,
-            "attachments": [],
-        }
-        new_value = json.dumps(meta)
-        return new_value
-
-    key = POSTGRES_META_KEY.format(project_name=postgres_project_name)
-    store.update(key=key, update_func=update_func)
+    with Session.begin() as dbsession:
+        database = get_database(
+            dbsession=dbsession, instance_name=instance_name, db_name=db_name
+        )
+        assert database is not None
+        user = User(
+            name=user_name,
+            password=password,
+            database=database,
+        )
+        dbsession.add(user)
 
 
-def remove_user(postgres_project_name: str, db_name: str, user: str) -> None:
+def get_database(
+    dbsession: DBSession, instance_name: str, db_name: str
+) -> Database | None:
+    stmt = (
+        select(Database)
+        .join(Instance)
+        .where(Database.name == db_name)
+        .where(Instance.name == instance_name)
+        .limit(1)
+    )
+    result = dbsession.execute(stmt)
+    database = result.scalars().first()
+    return database
+
+
+def remove_user(instance_name: str, db_name: str, user_name: str) -> None:
     log.info(
         "Removing info about user %s for database %s (%s)",
-        user,
+        user_name,
         db_name,
-        postgres_project_name,
+        instance_name,
     )
+    with Session.begin() as dbsession:
+        user = get_user(
+            dbsession=dbsession,
+            instance_name=instance_name,
+            db_name=db_name,
+            user_name=user_name,
+        )
+        if user is None:
+            log.info("User not found, doing nothing")
+            return
+        for attachment in user.attachments:
+            dbsession.delete(attachment)
+        dbsession.delete(user)
 
-    def update_func(value: str | None) -> str:
-        assert value is not None
-        meta = json.loads(value)
-        if user in meta["databases"][db_name]["users"]:
-            del meta["databases"][db_name]["users"][user]
-        new_value = json.dumps(meta)
-        return new_value
 
-    key = POSTGRES_META_KEY.format(project_name=postgres_project_name)
-    store.update(key=key, update_func=update_func)
-
-
-def add_env_var(
-    postgres_project_name: str,
+def add_attachment(
+    instance_name: str,
     db_name: str,
-    user: str,
+    user_name: str,
     project_name: str,
     var_name: str,
 ):
@@ -180,57 +140,98 @@ def add_env_var(
         var_name,
         project_name,
         db_name,
-        postgres_project_name,
+        instance_name,
     )
+    with Session.begin() as dbsession:
+        user = get_user(
+            dbsession=dbsession,
+            instance_name=instance_name,
+            db_name=db_name,
+            user_name=user_name,
+        )
+        assert user is not None
+        attachment = Attachment(
+            project_name=project_name,
+            env_var=var_name,
+            user=user,
+        )
+        dbsession.add(attachment)
 
-    def update_func(value: str | None) -> str:
-        assert value is not None
-        meta = json.loads(value)
-        attachment = {
-            "created": datetime.now(timezone.utc).isoformat(),
-            "project": project_name,
-            "var": var_name,
-        }
-        meta["databases"][db_name]["users"][user]["attachments"].append(attachment)
-        new_value = json.dumps(meta)
-        return new_value
 
-    key = POSTGRES_META_KEY.format(project_name=postgres_project_name)
-    store.update(key=key, update_func=update_func)
-
-
-def get_admin_conn_str(postgres_project_name: str) -> str | None:
-    key = POSTGRES_META_KEY.format(project_name=postgres_project_name)
-    value = store.get(key)
-    assert value is not None
-    meta = json.loads(value)
-    if meta["admin"] is None:
-        return None
-    return misc.conn_string(
-        user=meta["admin"]["user"],
-        password=meta["admin"]["password"],
-        postgres_project_name=postgres_project_name,
-        db_name=None,
+def get_user(
+    dbsession: DBSession, instance_name: str, db_name: str, user_name: str
+) -> User | None:
+    stmt = (
+        select(User)
+        .join(Database)
+        .join(Instance)
+        .where(User.name == user_name)
+        .where(Database.name == db_name)
+        .where(Instance.name == instance_name)
+        .limit(1)
     )
+    result = dbsession.execute(stmt)
+    user = result.scalars().first()
+    return user
 
 
-def get_conn_str(
-    postgres_project_name: str,
+def get_admin_conn_str(instance_name: str) -> str | None:
+    with Session.begin() as dbsession:
+        instance = get_instance_by_name(dbsession, instance_name)
+        assert instance is not None
+        return misc.conn_string(
+            user=instance.admin_user,
+            password=instance.admin_password,
+            postgres_project_name=misc.instance_project_name(instance_name),
+            db_name=None,
+        )
+
+
+def get_instance_by_name(dbsession, instance_name) -> Instance | None:
+    stmt = select(Instance).where(Instance.name == instance_name).limit(1)
+    result = dbsession.execute(stmt)
+    instance = result.scalars().first()
+    return instance
+
+
+def get_attachments_for_instance(
+    dbsession: DBSession, instance: Instance
+) -> Sequence[Attachment]:
+    stmt = (
+        select(Attachment)
+        .join(User)
+        .join(Database)
+        .where(Database.instance == instance)
+    )
+    result = dbsession.execute(stmt)
+    attachments = result.scalars().all()
+    return attachments
+
+
+def get_attachments(
+    dbsession: DBSession,
+    instance_name: str,
     db_name: str,
-    user: str,
-) -> str | None:
-    key = POSTGRES_META_KEY.format(project_name=postgres_project_name)
-    value = store.get(key)
-    assert value is not None
-    meta = json.loads(value)
-    if db_name not in meta["databases"]:
-        return None
-    if user not in meta["databases"][db_name]["users"]:
-        return None
-    password = meta["databases"][db_name]["users"][user]["password"]
-    return misc.conn_string(
-        user=user,
-        password=password,
-        postgres_project_name=postgres_project_name,
-        db_name=db_name,
+    project_name: str,
+    env_var: str | None,
+) -> Sequence[Attachment]:
+    stmt = (
+        select(Attachment)
+        .join(User)
+        .join(Database)
+        .where(Attachment.project_name == project_name)
+        .where(Database.name == db_name)
+        .where(Instance.name == instance_name)
     )
+    if env_var is not None:
+        stmt = stmt.where(Attachment.env_var == env_var)
+    result = dbsession.execute(stmt)
+    attachments = result.scalars().all()
+    return attachments
+
+
+def get_instances(dbsession: DBSession) -> Sequence[Instance]:
+    stmt = select(Instance)
+    result = dbsession.execute(stmt)
+    attachments = result.scalars().all()
+    return attachments

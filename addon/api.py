@@ -1,8 +1,9 @@
 from fastapi import FastAPI
+
 from addon.endpoints import (
-    instances,
-    databases,
     attachments,
+    databases,
+    instances,
 )
 
 app = FastAPI()
