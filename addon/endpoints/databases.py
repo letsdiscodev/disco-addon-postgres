@@ -8,8 +8,12 @@ from addon.models.db import Session
 router = APIRouter()
 
 
-@router.get("/instances/{instance_name}/databases")
-def instance_databases_get(instance_name: Annotated[str, Path()]):
+@router.get(
+    "/instances/{instance_name}/databases",
+)
+def instance_databases_get(
+    instance_name: Annotated[str, Path()],
+):
     with Session.begin() as dbsession:
         instance = storage.get_instance_by_name(dbsession, instance_name)
         if instance is None:
@@ -40,7 +44,9 @@ def instance_databases_get(instance_name: Annotated[str, Path()]):
 
 
 @router.post("/instances/{instance_name}/databases", status_code=201)
-def instance_databases_post(instance_name: Annotated[str, Path()]):
+def instance_databases_post(
+    instance_name: Annotated[str, Path()],
+):
     with Session.begin() as dbsession:
         instance = storage.get_instance_by_name(dbsession, instance_name)
         if instance is None:
@@ -59,7 +65,8 @@ def instance_databases_post(instance_name: Annotated[str, Path()]):
 
 @router.delete("/instances/{instance_name}/databases/{db_name}")
 def database_delete(
-    instance_name: Annotated[str, Path()], db_name: Annotated[str, Path()]
+    instance_name: Annotated[str, Path()],
+    db_name: Annotated[str, Path()],
 ):
     with Session.begin() as dbsession:
         instance = storage.get_instance_by_name(dbsession, instance_name)

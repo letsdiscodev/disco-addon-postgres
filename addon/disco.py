@@ -5,12 +5,11 @@ from typing import Any
 import requests
 
 from addon import misc
-from addon.context import api_key
 
 log = logging.getLogger(__name__)
 
 
-def create_postgres_project() -> str:
+def create_postgres_project(api_key: str) -> str:
     log.info("Creating Postgres project")
     assert api_key is not None
     req_body = {
@@ -30,7 +29,7 @@ def create_postgres_project() -> str:
     return project_name
 
 
-def remove_project(project_name: str) -> None:
+def remove_project(project_name: str, api_key: str) -> None:
     log.info("Removing Postgres project %s", project_name)
     assert api_key is not None
     response = requests.delete(
@@ -43,7 +42,7 @@ def remove_project(project_name: str) -> None:
 
 
 def init_postgres_env_variables(
-    postgres_project_name: str, admin_user: str, admin_password: str
+    postgres_project_name: str, admin_user: str, admin_password: str, api_key: str
 ) -> None:
     log.info("Setting env vars for Postgres before starting it")
     assert api_key is not None
@@ -88,7 +87,9 @@ POSTGRES_DISCO_FILE = {
 }
 
 
-def deploy_postgres_project(postgres_project_name: str, version: str) -> int:
+def deploy_postgres_project(
+    postgres_project_name: str, version: str, api_key: str
+) -> int:
     log.info("Deploying Postgres %s (%s)", postgres_project_name, version)
     assert api_key is not None
     url = f"http://disco/api/projects/{postgres_project_name}/deployments"
@@ -109,7 +110,7 @@ def deploy_postgres_project(postgres_project_name: str, version: str) -> int:
     return resp_body["deployment"]["number"]
 
 
-def project_exists(project_name: str):
+def project_exists(project_name: str, api_key: str):
     assert api_key is not None
     response = requests.get(
         "http://disco/api/projects",
@@ -124,7 +125,8 @@ def project_exists(project_name: str):
 def set_conn_str_env_var(
     project_name: str,
     var_name: str,
-    conn_str,
+    conn_str: str,
+    api_key: str,
 ) -> int | None:
     log.info("Setting connection string env variable %s for %s", var_name, project_name)
     assert api_key is not None
@@ -154,6 +156,7 @@ def set_conn_str_env_var(
 def get_conn_str_env_var(
     project_name: str,
     var_name: str,
+    api_key: str,
 ) -> str | None:
     log.info("Getting connection string env variable %s for %s", var_name, project_name)
     assert api_key is not None
@@ -172,6 +175,7 @@ def get_conn_str_env_var(
 def unset_conn_str_env_var(
     project_name: str,
     var_name: str,
+    api_key: str,
 ) -> int | None:
     log.info(
         "Unsetting connection string env variable %s for %s", var_name, project_name

@@ -2,10 +2,11 @@ import logging
 from dataclasses import dataclass
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel, Field
 
 from addon import disco, misc, postgres, storage
+from addon.context import get_api_key
 from addon.models.db import Session
 
 log = logging.getLogger(__name__)
@@ -25,8 +26,9 @@ def attach_post(
     instance_name: Annotated[str, Path()],
     db_name: Annotated[str, Path()],
     req_body: AttachDatabaseReqBody,
+    api_key: Annotated[str, Depends(get_api_key)],
 ):
-    if not disco.project_exists(req_body.project):
+    if not disco.project_exists(req_body.project, api_key=api_key):
         raise HTTPException(
             status_code=404, detail=f"Project {req_body.project} not found"
         )
@@ -70,6 +72,7 @@ def attach_post(
             project_name=req_body.project,
             var_name=req_body.env_var,
             conn_str=existing_conn_str,
+            api_key=api_key,
         )
         return {
             "deployment": {"number": deployment_number}
@@ -108,6 +111,7 @@ def attach_post(
             postgres_project_name=postgres_project_name,
             db_name=db_name,
         ),
+        api_key=api_key,
     )
     storage.add_attachment(
         instance_name=instance_name,
@@ -142,9 +146,10 @@ def detach_post(
     instance_name: Annotated[str, Path()],
     db_name: Annotated[str, Path()],
     req_body: DetachDatabaseReqBody,
+    api_key: Annotated[str, Depends(get_api_key)],
 ):
     postgres_project_name = f"postgres-instance-{instance_name}"
-    if not disco.project_exists(req_body.project):
+    if not disco.project_exists(req_body.project, api_key=api_key):
         raise HTTPException(
             status_code=404, detail=f"Project {req_body.project} not found"
         )
@@ -186,6 +191,7 @@ def detach_post(
         existing_env_var_value = disco.get_conn_str_env_var(
             project_name=req_body.project,
             var_name=attachment_info.env_var,
+            api_key=api_key,
         )
         expected_conn_str = misc.conn_string(
             user=attachment_info.user,
@@ -197,6 +203,7 @@ def detach_post(
             deployment_number = disco.unset_conn_str_env_var(
                 project_name=req_body.project,
                 var_name=attachment_info.env_var,
+                api_key=api_key,
             )
         admin_conn_str = storage.get_admin_conn_str(instance_name)
         assert admin_conn_str is not None
