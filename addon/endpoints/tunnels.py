@@ -19,7 +19,7 @@ class CreateTunnelReqBody(BaseModel):
 
 
 @router.post("/tunnels")
-def detach_post(
+def tunnels_post(
     req_body: CreateTunnelReqBody,
 ):
     with Session.begin() as dbsession:
