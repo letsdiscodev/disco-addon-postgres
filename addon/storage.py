@@ -235,3 +235,16 @@ def get_instances(dbsession: DBSession) -> Sequence[Instance]:
     result = dbsession.execute(stmt)
     attachments = result.scalars().all()
     return attachments
+
+
+def get_attachments_for_project(
+    dbsession: DBSession,
+    project_name: str,
+    env_var: str | None,
+) -> Sequence[Attachment]:
+    stmt = select(Attachment).where(Attachment.project_name == project_name)
+    if env_var is not None:
+        stmt = stmt.where(Attachment.env_var == env_var)
+    result = dbsession.execute(stmt)
+    attachments = result.scalars().all()
+    return attachments
