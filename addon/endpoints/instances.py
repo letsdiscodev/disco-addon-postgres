@@ -13,7 +13,16 @@ router = APIRouter()
 def instances_get():
     with Session.begin() as dbsession:
         instances = storage.get_instances(dbsession)
-        return {"instances": [{"name": instance.name} for instance in instances]}
+        return {
+            "instances": [
+                {
+                    "created": instance.created.isoformat(),
+                    "name": instance.name,
+                    "version": instance.version,
+                }
+                for instance in instances
+            ]
+        }
 
 
 @router.post("/instances", status_code=201)
@@ -42,6 +51,9 @@ def instances_post(
         api_key=api_key,
     )
     return {
+        "instance": {
+            "name": instance_name,
+        },
         "project": {
             "name": postgres_project_name,
         },
