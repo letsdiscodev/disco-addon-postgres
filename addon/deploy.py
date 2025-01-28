@@ -18,6 +18,8 @@ def main():
 
 def upgrade() -> None:
     log.info("Checking if migration step is required")
+    from sqlalchemy import text
+
     import addon
     from addon import keyvalues
     from addon.models.db import Session
@@ -30,13 +32,13 @@ def upgrade() -> None:
     log.info("Upgrading addon")
     if installed_version == "1.0.0":
         log.info("1.0.0 to 1.1.0")
-        # nothing to do
+        alembic_upgrade("d49d80339efd")
+        with Session.begin() as dbsession:
+            dbsession.execute(text("UPDATE instances SET image = 'postgres'"))
+        alembic_upgrade("01f55269072f")
     with Session.begin() as dbsession:
-        keyvalues.set_value(
-            dbsession,
-            key="ADDON_VERSdef get_attachments_for_database(dbsession: DBSession, instance: Instance, db_name: str) -> Sequence[Attachment]:ION",
-            value=addon.__version__,
-        )
+        keyvalues.set_value(dbsession, key="ADDON_VERSION", value=addon.__version__)
+    log.info("Done upgrading addon")
 
 
 def create_sqlite_db() -> None:
@@ -58,6 +60,14 @@ def create_sqlite_db() -> None:
 
 def sqlite_db_exists() -> bool:
     return os.path.exists("/addon/data/db.sqlite3")
+
+
+def alembic_upgrade(version_hash: str) -> None:
+    from alembic import command
+    from alembic.config import Config
+
+    config = Config("/code/alembic.ini")
+    command.upgrade(config, version_hash)
 
 
 if __name__ == "__main__":

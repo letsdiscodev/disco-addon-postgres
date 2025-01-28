@@ -88,13 +88,13 @@ POSTGRES_DISCO_FILE = {
 
 
 def deploy_postgres_project(
-    postgres_project_name: str, version: str, api_key: str
+    postgres_project_name: str, image: str, version: str, api_key: str
 ) -> int:
     log.info("Deploying Postgres %s (%s)", postgres_project_name, version)
     assert api_key is not None
     url = f"http://disco/api/projects/{postgres_project_name}/deployments"
     disco_file: dict[str, Any] = copy.deepcopy(POSTGRES_DISCO_FILE)
-    disco_file["services"]["postgres"]["image"] = f"postgres:{version}"
+    disco_file["services"]["postgres"]["image"] = f"{image}:{version}"
     req_body = {
         "discoFile": disco_file,
     }

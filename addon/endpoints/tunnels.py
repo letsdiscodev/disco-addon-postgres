@@ -13,9 +13,10 @@ router = APIRouter()
 
 class CreateTunnelReqBody(BaseModel):
     project: str = Field(..., pattern=r"^[a-z][a-z0-9\-]*$", max_length=255)
-    env_var: str = Field(
+    env_var: str | None = Field(
         None, pattern=r"^[a-zA-Z_]+[a-zA-Z0-9_]*$", max_length=255, alias="envVar"
     )
+    super_user: bool = Field(False, alias="superUser")
 
 
 @router.post("/tunnels")
@@ -39,7 +40,11 @@ def tunnels_post(
             "dbInfo": {
                 "instance": attachment.user.database.instance.name,
                 "database": attachment.user.database.name,
-                "user": attachment.user.name,
-                "password": attachment.user.password,
+                "user": attachment.user.database.instance.admin_user
+                if req_body.super_user
+                else attachment.user.name,
+                "password": attachment.user.database.instance.admin_password
+                if req_body.super_user
+                else attachment.user.password,
             }
         }

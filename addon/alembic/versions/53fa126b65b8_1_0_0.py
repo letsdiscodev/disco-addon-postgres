@@ -22,6 +22,9 @@ def upgrade():
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("name", sa.String(length=255), nullable=False),
+        sa.Column("version", sa.String(length=255), nullable=False),
+        sa.Column("admin_user", sa.String(length=255), nullable=False),
+        sa.Column("admin_password", sa.String(length=255), nullable=False),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_instances")),
     )
     op.create_table(

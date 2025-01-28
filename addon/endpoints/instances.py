@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path
+from pydantic import BaseModel, Field
 
 from addon import config, disco, misc, storage
 from addon.context import get_api_key
@@ -18,6 +19,7 @@ def instances_get():
                 {
                     "created": instance.created.isoformat(),
                     "name": instance.name,
+                    "image": instance.image,
                     "version": instance.version,
                 }
                 for instance in instances
@@ -25,17 +27,32 @@ def instances_get():
         }
 
 
+class AddInstanceReqBody(BaseModel):
+    image: str | None = Field(None, pattern=r"^[^\s:]+$", max_length=255)
+    version: str | None = Field(None, pattern=r"^[^\s:]+$", max_length=128)
+
+
 @router.post("/instances", status_code=201)
 def instances_post(
+    req_body: AddInstanceReqBody,
     api_key: Annotated[str, Depends(get_api_key)],
 ):
+    if req_body.image is None:
+        image = config.POSTGRES_IMAGE
+    else:
+        image = req_body.image
+    if req_body.version is None:
+        version = config.POSTGRES_VERSION
+    else:
+        version = req_body.version
     postgres_project_name = disco.create_postgres_project(api_key=api_key)
     instance_name = misc.instance_name_from_project_name(postgres_project_name)
     admin_user = misc.generate_user_name()
     admin_password = misc.generate_password()
     storage.add_postgres_instance(
         instance_name=instance_name,
-        version=config.POSTGRES_VERSION,
+        image=image,
+        version=version,
         admin_user=admin_user,
         admin_password=admin_password,
     )
@@ -47,7 +64,8 @@ def instances_post(
     )
     deployment_number = disco.deploy_postgres_project(
         postgres_project_name=postgres_project_name,
-        version=config.POSTGRES_VERSION,
+        image=image,
+        version=version,
         api_key=api_key,
     )
     return {

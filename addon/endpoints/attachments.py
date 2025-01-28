@@ -129,7 +129,7 @@ def attach_post(
 
 class DetachDatabaseReqBody(BaseModel):
     project: str = Field(..., pattern=r"^[a-z][a-z0-9\-]*$", max_length=255)
-    env_var: str = Field(
+    env_var: str | None = Field(
         None, pattern=r"^[a-zA-Z_]+[a-zA-Z0-9_]*$", max_length=255, alias="envVar"
     )
 

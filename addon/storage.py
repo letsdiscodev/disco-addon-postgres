@@ -12,12 +12,17 @@ log = logging.getLogger(__name__)
 
 
 def add_postgres_instance(
-    instance_name: str, version: str, admin_user: str, admin_password: str
+    instance_name: str,
+    image: str,
+    version: str,
+    admin_user: str,
+    admin_password: str,
 ) -> None:
     log.info("Saving info about new instance %s", instance_name)
     with Session.begin() as dbsession:
         instance = Instance(
             name=instance_name,
+            image=image,
             version=version,
             admin_user=admin_user,
             admin_password=admin_password,

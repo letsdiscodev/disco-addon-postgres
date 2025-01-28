@@ -33,6 +33,7 @@ class Instance(Base):
         nullable=False,
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    image: Mapped[str] = mapped_column(String(255), nullable=False)
     version: Mapped[str] = mapped_column(String(255), nullable=False)
     admin_user: Mapped[str] = mapped_column(String(255), nullable=False)
     admin_password: Mapped[str] = mapped_column(String(255), nullable=False)
