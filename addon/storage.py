@@ -187,7 +187,7 @@ def get_admin_conn_str(instance_name: str) -> str | None:
         )
 
 
-def get_instance_by_name(dbsession, instance_name) -> Instance | None:
+def get_instance_by_name(dbsession: DBSession, instance_name: str) -> Instance | None:
     stmt = select(Instance).where(Instance.name == instance_name).limit(1)
     result = dbsession.execute(stmt)
     instance = result.scalars().first()
@@ -245,6 +245,21 @@ def get_attachments_for_project(
     stmt = select(Attachment).where(Attachment.project_name == project_name)
     if env_var is not None:
         stmt = stmt.where(Attachment.env_var == env_var)
+    result = dbsession.execute(stmt)
+    attachments = result.scalars().all()
+    return attachments
+
+
+def get_attachments_for_database(
+    dbsession: DBSession, instance: Instance, db_name: str
+) -> Sequence[Attachment]:
+    stmt = (
+        select(Attachment)
+        .join(User)
+        .join(Database)
+        .where(Database.instance == instance)
+        .where(Database.name == db_name)
+    )
     result = dbsession.execute(stmt)
     attachments = result.scalars().all()
     return attachments

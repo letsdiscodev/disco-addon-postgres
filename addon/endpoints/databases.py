@@ -79,7 +79,7 @@ def database_delete(
                 status_code=404,
                 detail=f"Database {db_name} not found in {instance_name}",
             )
-        attachments = storage.get_attachments_for_instance(dbsession, instance)
+        attachments = storage.get_attachments_for_database(dbsession, instance, db_name)
         if len(attachments) > 0:
             usage = [
                 {"project": attachment.project_name, "envVar": attachment.env_var}
