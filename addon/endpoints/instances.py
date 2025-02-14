@@ -21,6 +21,25 @@ def instances_get():
                     "name": instance.name,
                     "image": instance.image,
                     "version": instance.version,
+                    "databases": [
+                        {
+                            "name": database.name,
+                            "users": [
+                                {
+                                    "name": user.name,
+                                    "attachments": [
+                                        {
+                                            "projectName": attachment.project_name,
+                                            "envVar": attachment.env_var,
+                                        }
+                                        for attachment in user.attachments
+                                    ],
+                                }
+                                for user in database.users
+                            ],
+                        }
+                        for database in instance.databases
+                    ],
                 }
                 for instance in instances
             ]
