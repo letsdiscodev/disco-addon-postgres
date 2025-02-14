@@ -23,13 +23,16 @@ def instances_get():
                     "version": instance.version,
                     "databases": [
                         {
+                            "created": database.created.isoformat(),
                             "name": database.name,
                             "users": [
                                 {
+                                    "created": user.created.isoformat(),
                                     "name": user.name,
                                     "attachments": [
                                         {
-                                            "projectName": attachment.project_name,
+                                            "created": attachment.created.isoformat(),
+                                            "project": attachment.project_name,
                                             "envVar": attachment.env_var,
                                         }
                                         for attachment in user.attachments
