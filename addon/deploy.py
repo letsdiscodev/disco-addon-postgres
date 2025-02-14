@@ -36,6 +36,9 @@ def upgrade() -> None:
         with Session.begin() as dbsession:
             dbsession.execute(text("UPDATE instances SET image = 'postgres'"))
         alembic_upgrade("01f55269072f")
+        installed_version = "1.1.0"
+    if installed_version == "1.1.0":
+        log.info("1.1.0 to 1.2.0")
     with Session.begin() as dbsession:
         keyvalues.set_value(dbsession, key="ADDON_VERSION", value=addon.__version__)
     log.info("Done upgrading addon")

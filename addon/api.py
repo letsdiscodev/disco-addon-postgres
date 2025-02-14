@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from addon.endpoints import (
+    addon,
     attachments,
     databases,
     instances,
@@ -9,6 +10,7 @@ from addon.endpoints import (
 
 app = FastAPI()
 
+app.include_router(addon.router)
 app.include_router(instances.router)
 app.include_router(databases.router)
 app.include_router(attachments.router)
