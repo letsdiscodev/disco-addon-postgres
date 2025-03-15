@@ -27,7 +27,7 @@ def upgrade() -> None:
     with Session.begin() as dbsession:
         installed_version = keyvalues.get_value(dbsession, key="ADDON_VERSION")
     if installed_version == addon.__version__:
-        log.info("Nothing ot migrate for now")
+        log.info("Nothing to migrate for now")
         return
     log.info("Upgrading addon")
     if installed_version == "1.0.0":

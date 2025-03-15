@@ -139,6 +139,7 @@ class AttachmentInfo:
     env_var: str
     user: str
     password: str
+    project_name: str
 
 
 @router.post("/instances/{instance_name}/databases/{db_name}/detach")
@@ -149,10 +150,6 @@ def detach_post(
     api_key: Annotated[str, Depends(get_api_key)],
 ):
     postgres_project_name = f"postgres-instance-{instance_name}"
-    if not disco.project_exists(req_body.project, api_key=api_key):
-        raise HTTPException(
-            status_code=404, detail=f"Project {req_body.project} not found"
-        )
     with Session.begin() as dbsession:
         instance = storage.get_instance_by_name(dbsession, instance_name)
         if instance is None:
@@ -176,49 +173,71 @@ def detach_post(
                 env_var=attachment.env_var,
                 user=attachment.user.name,
                 password=attachment.user.password,
+                project_name=attachment.project_name,
             )
             for attachment in attachments
         ]
     deployment_number = None
     for attachment_info in attachments_info:
-        log.info(
-            "Detaching %s (%s) from %s as %s",
-            db_name,
-            instance_name,
-            req_body.project,
-            attachment_info.env_var,
-        )
-        existing_env_var_value = disco.get_conn_str_env_var(
-            project_name=req_body.project,
-            var_name=attachment_info.env_var,
-            api_key=api_key,
-        )
-        expected_conn_str = misc.conn_string(
-            user=attachment_info.user,
-            password=attachment_info.password,
-            postgres_project_name=postgres_project_name,
+        deployment_number = remove_attachment(
+            attachment_info=attachment_info,
             db_name=db_name,
-        )
-        if existing_env_var_value == expected_conn_str:
-            deployment_number = disco.unset_conn_str_env_var(
-                project_name=req_body.project,
-                var_name=attachment_info.env_var,
-                api_key=api_key,
-            )
-        admin_conn_str = storage.get_admin_conn_str(instance_name)
-        assert admin_conn_str is not None
-        postgres.remove_user(
-            admin_conn_str=admin_conn_str,
-            db_name=db_name,
-            user=attachment_info.user,
-        )
-        storage.remove_user(
             instance_name=instance_name,
-            db_name=db_name,
-            user_name=attachment_info.user,
+            postgres_project_name=postgres_project_name,
+            project_name=attachment_info.project_name,
+            api_key=api_key,
         )
     return {
         "deployment": {"number": deployment_number}
         if deployment_number is not None
         else None
     }
+
+
+def remove_attachment(
+    attachment_info: AttachmentInfo,
+    db_name: str,
+    instance_name: str,
+    postgres_project_name: str,
+    project_name: str,
+    api_key: str,
+) -> int | None:
+    log.info(
+        "Detaching %s (%s) from %s as %s",
+        db_name,
+        instance_name,
+        project_name,
+        attachment_info.env_var,
+    )
+    existing_env_var_value = disco.get_conn_str_env_var(
+        project_name=project_name,
+        var_name=attachment_info.env_var,
+        api_key=api_key,
+    )
+    expected_conn_str = misc.conn_string(
+        user=attachment_info.user,
+        password=attachment_info.password,
+        postgres_project_name=postgres_project_name,
+        db_name=db_name,
+    )
+    if existing_env_var_value == expected_conn_str:
+        deployment_number = disco.unset_conn_str_env_var(
+            project_name=project_name,
+            var_name=attachment_info.env_var,
+            api_key=api_key,
+        )
+    else:
+        deployment_number = None
+    admin_conn_str = storage.get_admin_conn_str(instance_name)
+    assert admin_conn_str is not None
+    postgres.remove_user(
+        admin_conn_str=admin_conn_str,
+        db_name=db_name,
+        user=attachment_info.user,
+    )
+    storage.remove_user(
+        instance_name=instance_name,
+        db_name=db_name,
+        user_name=attachment_info.user,
+    )
+    return deployment_number
